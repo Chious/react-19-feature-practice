@@ -1,103 +1,72 @@
-import Image from "next/image";
+'use client';
+
+import { addTodo } from '@/actions/todo-action';
+import { useActionState, useOptimistic } from 'react';
+import { useState } from 'react';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [optimisticName, setOptimisticName] = useOptimistic('Learn React');
+  const [todos, setTodos] = useState<string[]>(['Clean House']);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const [error, submitAction, isPending] = useActionState(
+    async (prevState: string | null, formData: FormData) => {
+      const todo = formData.get('todo');
+      if (!todo) return 'Todo cannot be empty';
+      
+      // Apply optimistic update
+      setOptimisticName(todo as string);
+      
+      // Call the server action
+      const errorMsg = await addTodo(todo);
+      
+      if (!errorMsg) {
+        // If successful, update the state and clear input
+        setTodos(prev => [...prev, todo as string]);
+        setOptimisticName('');
+      }
+      
+      return errorMsg;
+    },
+    null
+  );
+
+  return (
+    <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-white text-black">
+      <main className="flex flex-col items-center justify-center h-full w-full">
+        <h1 className=" font-extrabold text-2xl">我的待辦清單</h1>
+        <ul>
+          {todos.map((todo, index) => (
+            <li key={index}>{todo}</li>
+          ))}
+          {isPending && <p>{optimisticName} (Pending)</p>}
+        </ul>
+
+        <form
+          action={submitAction}
+          className="space-y-4 max-w-md mx-auto p-6 bg-slate-50 rounded-lg shadow-md"
+        >
+          <p className="text-lg font-medium">請輸入待辦事項</p>
+
+          <div>
+            <input
+              type="text"
+              name="todo"
+              placeholder="Enter new todo"
+              className="w-full px-4 py-2 border rounded-md"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          <button
+            type="submit"
+            disabled={isPending}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-300"
           >
-            Read our docs
-          </a>
-        </div>
+            {isPending ? 'Adding...' : 'Add Todo'}
+          </button>
+          
+          {error && <p className="text-red-500 mt-2">Error: {error}</p>}
+        </form>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
